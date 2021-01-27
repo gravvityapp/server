@@ -5,15 +5,23 @@ const userSchema = new Schema(
 	{
 		name: {
 			first: {
+				//in small
 				type: String,
 				required: true,
 			},
 			last: {
+				//in small
 				type: String,
 				required: true,
 			},
 		},
 		googleId: {
+			//uid
+			type: String,
+			required: true,
+		},
+		email: {
+			//in small
 			type: String,
 			required: true,
 		},

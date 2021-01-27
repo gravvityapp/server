@@ -15,7 +15,7 @@ app.use(
 );
 
 //Server Routes
-const handleAuth = require("./routes/auth.routes");
+const handleAuth = require("./routes/Auth.routes");
 app.use("/api/user", handleAuth);
 
 //Mongodb Connection

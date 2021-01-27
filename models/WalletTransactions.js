@@ -9,6 +9,7 @@ const walletTransactionsSchema = new Schema(
 				required: true,
 			},
 			googleId: {
+				//uid
 				type: String,
 				required: true,
 			},
@@ -18,7 +19,7 @@ const walletTransactionsSchema = new Schema(
 			required: true,
 		},
 		actionType: {
-			// add or withdraw
+			// add or withdraw (in small)
 			type: String,
 			required: true,
 		},

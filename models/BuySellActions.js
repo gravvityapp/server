@@ -9,6 +9,7 @@ const buySellActionsSchema = new Schema(
 				required: true,
 			},
 			googleId: {
+				//uid
 				type: String,
 				required: true,
 			},
@@ -19,13 +20,18 @@ const buySellActionsSchema = new Schema(
 			required: true,
 		},
 		actionType: {
-			// buy or sell
+			// add or withdraw
 			type: String,
 			required: true,
 		},
 		stockPrice: {
 			// Price of stock at that moment
 			type: Number,
+			required: true,
+		},
+		stockCode: {
+			//ril or sbin (in small)
+			type: String,
 			required: true,
 		},
 		time: {
