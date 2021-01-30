@@ -2,10 +2,18 @@ const Users = require("../models/Users");
 const { JWT_SECRET } = process.env;
 const jwt = require("jsonwebtoken");
 
-//To Sign JWT Token
+//To Sign JWT Token(used in handleAuth function below)
 const signJWT = (googleId) => {
 	const token = jwt.sign({ googleId }, JWT_SECRET);
 	return token;
+};
+
+//Used in the handleAuth function below to break full name into parts
+const handleFullName = (fullName) => {
+	const partsOfFullName = fullName.split(" ");
+	const firstName = partsOfFullName[0].toLowerCase();
+	const lastName = partsOfFullName[partsOfFullName.length - 1].toLowerCase();
+	return { firstName, lastName };
 };
 
 //To handle User signup and login
@@ -24,15 +32,11 @@ const handleAuth = async (req, res, next) => {
 			const token = signJWT(googleId);
 			res.status(200).json({ message: token, user: isUserExisting });
 		} else {
-			const partsOfFullName = fullName.split(" ");
-			const firstName = partsOfFullName[0].toLowerCase();
-			const lastName = partsOfFullName[
-				partsOfFullName.length - 1
-			].toLowerCase();
+			const partsOfFullName = handleFullName(fullName);
 			const saveUser = new Users({
 				name: {
-					first: firstName,
-					last: lastName,
+					first: partsOfFullName.firstName,
+					last: partsOfFullName.lastName,
 				},
 				googleId,
 				email,
