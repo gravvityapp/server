@@ -23,7 +23,7 @@ const walletTransactionsSchema = new Schema(
 			type: String,
 			required: true,
 		},
-		isPaymentSuccessful: {
+		isTransactionSuccessful: {
 			// Can be some error in the process so this is required
 			type: Boolean,
 			required: true,
