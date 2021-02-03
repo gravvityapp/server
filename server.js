@@ -22,7 +22,7 @@ const handleWalletActions = require("./routes/Wallet.routes");
 app.use("/api/wallet", handleWalletActions);
 
 const handleBuySellActions = require("./routes/Action.routes");
-app.use("/api/actions", handleBuySellActions);
+app.use("/api/action", handleBuySellActions);
 
 //Mongodb Connection
 const MONGO_URI = process.env.MONGO_URI;

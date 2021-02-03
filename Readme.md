@@ -13,6 +13,6 @@
 
         PORT=8080
         MONGO_URI=mongodb://localhost:27017/gravvity
-        		JWT_SECRET=hfsdajklfhljhflj
+        JWT_SECRET=hfsdajklfhljhflj
 
 3.  npm run dev

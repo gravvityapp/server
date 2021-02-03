@@ -1,6 +1,6 @@
 const Users = require("../models/Users");
-const { JWT_SECRET } = process.env;
 const jwt = require("jsonwebtoken");
+const { JWT_SECRET } = process.env;
 
 //To Sign JWT Token(used in handleAuth function below)
 const signJWT = (googleId) => {

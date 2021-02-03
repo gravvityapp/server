@@ -70,6 +70,14 @@ const handleTransactionUpdate = async (req, res, next) => {
 	const isTransactionSuccessful = req.body.isTransactionSuccessful;
 	const otherDetails = req.body.otherDetails;
 
+	const reqPath = req.originalUrl;
+	const reqRoute = reqPath.split("/")[3]; //add or withdraw
+
+	if (reqRoute !== actionType)
+		return res
+			.status(400)
+			.json({ error: "Error with the Request! Please try Again!" });
+
 	//check for negative balance
 	if (
 		actionType === "withdraw" &&
