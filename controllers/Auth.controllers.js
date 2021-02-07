@@ -18,9 +18,9 @@ const handleFullName = (fullName) => {
 
 //To handle User signup and login
 const handleAuth = async (req, res, next) => {
-	const { fullName, googleId, email } = req.body;
+	const { fullName, googleId, email, platformType } = req.body; //platformType can either be "app" or "web"
 
-	if (!fullName || !googleId || !email) {
+	if (!fullName || !googleId || !email || !platformType) {
 		return res
 			.status(400)
 			.json({ error: "Problem with the request. Please try again!" });
@@ -30,7 +30,12 @@ const handleAuth = async (req, res, next) => {
 		const isUserExisting = await Users.findOne({ googleId });
 		if (isUserExisting) {
 			const token = signJWT(googleId);
-			res.status(200).json({ message: token, user: isUserExisting });
+			if (platformType === "app")
+				res.status(200).json({ message: token, user: isUserExisting });
+			else if (platformType === "web")
+				res
+					.status(303)
+					.redirect("https://app.gravvity.com/redirect?token=" + token);
 		} else {
 			const partsOfFullName = handleFullName(fullName);
 			const saveUser = new Users({
@@ -44,7 +49,12 @@ const handleAuth = async (req, res, next) => {
 			const savedUser = await saveUser.save();
 			try {
 				const token = signJWT(googleId);
-				return res.status(201).json({ message: token, user: savedUser });
+				if (platformType === "app")
+					return res.status(201).json({ message: token, user: savedUser });
+				else if (platformType === "web")
+					res
+						.status(303)
+						.redirect("https://app.gravvity.com/redirect?token=" + token);
 			} catch (err) {
 				return res
 					.status(500)
