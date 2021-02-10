@@ -1,5 +1,51 @@
 const WalletTransactions = require("../models/WalletTransactions");
 const Users = require("../models/Users");
+const razorpay = require("razorpay");
+
+//For the razorpay
+const instance = new razorpay({
+	key_id: "rzp_test_n3ySkUcUdOIoIf",
+	key_secret: "MgkDJAFk0i425pNjPZX702UI",
+});
+
+const handleRazorpay = async (req, res, next) => {
+	try {
+		const response = await instance.orders.create({
+			amount: 10000,
+			currency: "INR",
+			receipt: "thisisthetestreceipt",
+			payment_capture: 1,
+		});
+		console.log(response, "response");
+		res.json({
+			id: response.id,
+		});
+	} catch (err) {
+		console.log(err, "error");
+	}
+};
+
+//For Razorpay Verification
+const handleVerification = async (req, res, next) => {
+	const secret = "123456";
+	console.log(req.body, "body");
+
+	const crypto = require("crypto");
+
+	const shasum = crypto.createHmac("sha256", secret);
+	shasum.update(JSON.stringify(req.body));
+	const digest = shasum.digest("hex");
+
+	console.log(digest, req.headers["x-razorpay-signature"]);
+
+	if (digest === req.headers["x-razorpay-signature"]) {
+		console.log("legit");
+		res.json({ status: "ok" });
+	} else {
+		console.log("timepass");
+		res.status(502).json({ status: "fail" });
+	}
+};
 
 //To get all the wallet transactions of a user
 const handleTranactionsFetch = async (req, res, next) => {
@@ -129,4 +175,6 @@ const handleTransactionUpdate = async (req, res, next) => {
 module.exports = {
 	handleTranactionsFetch,
 	handleTransactionUpdate,
+	handleRazorpay,
+	handleVerification,
 };

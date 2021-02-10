@@ -27,6 +27,13 @@ const handleAuth = async (req, res, next) => {
 		});
 	}
 
+	if (platformType !== "app" || platformType !== "web") {
+		return res.status(400).json({
+			error: "Problem with the request. Please try again!",
+			status: 400,
+		});
+	}
+
 	try {
 		const isUserExisting = await Users.findOne({ googleId });
 		if (isUserExisting) {
@@ -35,8 +42,8 @@ const handleAuth = async (req, res, next) => {
 				res
 					.status(200)
 					.json({ message: token, user: isUserExisting, status: 200 });
-			else if (platformType === "web") res;
-			res.status(200).json({ message: token, redirect: true, status: 200 });
+			else if (platformType === "web")
+				res.status(200).json({ message: token, redirect: true, status: 200 });
 		} else {
 			const partsOfFullName = handleFullName(fullName);
 			const saveUser = new Users({
@@ -45,7 +52,7 @@ const handleAuth = async (req, res, next) => {
 					last: partsOfFullName.lastName,
 				},
 				googleId,
-				email,
+				email: email.toLowerCase(),
 			});
 			const savedUser = await saveUser.save();
 			try {
@@ -54,8 +61,8 @@ const handleAuth = async (req, res, next) => {
 					return res
 						.status(201)
 						.json({ message: token, user: savedUser, status: 201 });
-				else if (platformType === "web") res;
-				res.status(201).json({ message: token, redirect: true, status: 201 });
+				else if (platformType === "web")
+					res.status(201).json({ message: token, redirect: true, status: 201 });
 			} catch (err) {
 				return res.status(500).json({
 					error: "Error with the request. Please try again!",
@@ -79,6 +86,10 @@ const verifyToken = async (req, res, next) => {
 			.status(401)
 			.json({ error: "You Must be Logged In to Continue", status: 401 });
 	const token = authorization.replace("Bearer ", "");
+	if (!token)
+		return res
+			.status(401)
+			.json({ error: "You Must be Logged In to Continue", status: 401 });
 	jwt.verify(token, JWT_SECRET, async (err, payload) => {
 		if (err)
 			return res

@@ -2,10 +2,12 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const helmet = require("helmet");
 const mongoose = require("mongoose");
 
 const app = express();
 app.use(cors());
+app.use(helmet());
 app.use(express.json());
 app.enable("trust proxy"); //To log IP Address of the requests
 app.use(
