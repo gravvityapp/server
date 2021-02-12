@@ -108,18 +108,27 @@ const redisRoute = async (req, res, _) => {
 
 
 // GITHUB pull request
-const githubWebhook = async (req, res, next) => {
-	const simpleGit = require('simple-git');
+const githubWebhook = async (req, res, _) => {
+	if (
+		req.body.ref.indexOf('master') > -1 && 
+		(
+			req.body.sender.login === 'kyteinsky' ||
+			req.body.sender.login === 'AdityaKG-169'
+		)
+	){
+		const simpleGit = require('simple-git');
 
-	const options = {
-		baseDir: process.cwd()+'/../',
-		binary: 'git',
-		maxConcurrentProcesses: 6,
-	};
-	
-	const git = simpleGit(options);
+		const options = {
+			baseDir: process.cwd()+'/../',
+			binary: 'git',
+			maxConcurrentProcesses: 6,
+		};
+		
+		const git = simpleGit(options);
 
-	git.pull()
+		git.pull()
+		console.log('pulled from github repo');
+	}
 }
 
 module.exports = {
