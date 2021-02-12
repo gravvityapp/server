@@ -3,6 +3,11 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const mongoose = require("mongoose");
+const fs = require('fs');
+const https = require('https');
+
+const privateKey = fs.readFileSync( 'pems/pri.pem' );
+const certificate = fs.readFileSync( 'pems/cer.pem' );
 
 const app = express();
 app.use(cors());
@@ -13,6 +18,11 @@ app.use(
 		":date[iso] :remote-addr :method :url :status :res[content-length] - :response-time ms"
 	)
 );
+
+// s
+app.get('/', function (req, res) {
+  res.send('hello world')
+});
 
 //Server Routes
 const handleAuth = require("./routes/Auth.routes");
@@ -40,5 +50,8 @@ mongoose
 	});
 
 //Port Listener
-const PORT = process.env.PORT;
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+const port = process.env.PORT;
+//app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+
+https.createServer({ key: privateKey, cert: certificate
+}, app).listen(port, () => console.log(`Server is running on port ${port}`));
