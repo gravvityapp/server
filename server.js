@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const helmet = require("helmet");
 const mongoose = require("mongoose");
 const fs = require('fs');
 const https = require('https');
@@ -11,6 +12,7 @@ const certificate = fs.readFileSync( 'pems/cer.pem' );
 
 const app = express();
 app.use(cors());
+app.use(helmet());
 app.use(express.json());
 app.enable("trust proxy"); //To log IP Address of the requests
 app.use(
@@ -32,7 +34,7 @@ const handleWalletActions = require("./routes/Wallet.routes");
 app.use("/api/wallet", handleWalletActions);
 
 const handleBuySellActions = require("./routes/Action.routes");
-app.use("/api/actions", handleBuySellActions);
+app.use("/api/action", handleBuySellActions);
 
 //Mongodb Connection
 const MONGO_URI = process.env.MONGO_URI;

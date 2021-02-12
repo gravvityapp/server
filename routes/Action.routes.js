@@ -8,5 +8,7 @@ router.get("/all", verifyToken);
 router.post("/invest", verifyToken);
 //Withdraw Call
 router.post("/withdraw", verifyToken);
+//route to get realtime profits
+router.get("/profit", verifyToken);
 
 module.exports = router;

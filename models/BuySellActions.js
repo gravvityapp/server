@@ -15,7 +15,7 @@ const buySellActionsSchema = new Schema(
 			},
 		},
 		amount: {
-			//amount of money user is investing/withdrawing
+			//amount of money user is investing/withdrawing(include profit in withdrawing)
 			type: Number,
 			required: true,
 		},

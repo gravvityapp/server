@@ -1,6 +1,6 @@
 const Users = require("../models/Users");
-const { JWT_SECRET } = process.env;
 const jwt = require("jsonwebtoken");
+const { JWT_SECRET } = process.env;
 
 //To Sign JWT Token(used in handleAuth function below)
 const signJWT = (googleId) => {
@@ -18,19 +18,32 @@ const handleFullName = (fullName) => {
 
 //To handle User signup and login
 const handleAuth = async (req, res, next) => {
-	const { fullName, googleId, email } = req.body;
+	const { fullName, googleId, email, platformType } = req.body; //platformType can either be "app" or "web"
 
-	if (!fullName || !googleId || !email) {
-		return res
-			.status(400)
-			.json({ error: "Problem with the request. Please try again!" });
+	if (!fullName || !googleId || !email || !platformType) {
+		return res.status(400).json({
+			error: "Problem with the request. Please try again!",
+			status: 400,
+		});
+	}
+
+	if (platformType !== "app" || platformType !== "web") {
+		return res.status(400).json({
+			error: "Problem with the request. Please try again!",
+			status: 400,
+		});
 	}
 
 	try {
 		const isUserExisting = await Users.findOne({ googleId });
 		if (isUserExisting) {
 			const token = signJWT(googleId);
-			res.status(200).json({ message: token, user: isUserExisting });
+			if (platformType === "app")
+				res
+					.status(200)
+					.json({ message: token, user: isUserExisting, status: 200 });
+			else if (platformType === "web")
+				res.status(200).json({ message: token, redirect: true, status: 200 });
 		} else {
 			const partsOfFullName = handleFullName(fullName);
 			const saveUser = new Users({
@@ -39,22 +52,29 @@ const handleAuth = async (req, res, next) => {
 					last: partsOfFullName.lastName,
 				},
 				googleId,
-				email,
+				email: email.toLowerCase(),
 			});
 			const savedUser = await saveUser.save();
 			try {
 				const token = signJWT(googleId);
-				return res.status(201).json({ message: token, user: savedUser });
+				if (platformType === "app")
+					return res
+						.status(201)
+						.json({ message: token, user: savedUser, status: 201 });
+				else if (platformType === "web")
+					res.status(201).json({ message: token, redirect: true, status: 201 });
 			} catch (err) {
-				return res
-					.status(500)
-					.json({ error: "Error with the request. Please try again!" });
+				return res.status(500).json({
+					error: "Error with the request. Please try again!",
+					status: 500,
+				});
 			}
 		}
 	} catch (err) {
-		return res
-			.status(500)
-			.json({ error: "Error with the request. Please try again!" });
+		return res.status(500).json({
+			error: "Error with the request. Please try again!",
+			status: 500,
+		});
 	}
 };
 
@@ -62,13 +82,19 @@ const handleAuth = async (req, res, next) => {
 const verifyToken = async (req, res, next) => {
 	const { authorization } = req.headers;
 	if (!authorization)
-		return res.status(401).json({ error: "You Must be Logged In to Continue" });
+		return res
+			.status(401)
+			.json({ error: "You Must be Logged In to Continue", status: 401 });
 	const token = authorization.replace("Bearer ", "");
+	if (!token)
+		return res
+			.status(401)
+			.json({ error: "You Must be Logged In to Continue", status: 401 });
 	jwt.verify(token, JWT_SECRET, async (err, payload) => {
 		if (err)
 			return res
 				.status(401)
-				.json({ error: "You Must be Logged In to Continue" });
+				.json({ error: "You Must be Logged In to Continue", status: 401 });
 
 		const { googleId } = payload;
 		const fetchedUser = await Users.findOne({ googleId });
@@ -76,16 +102,17 @@ const verifyToken = async (req, res, next) => {
 			req.user = fetchedUser;
 			next();
 		} catch (err) {
-			res
-				.status(500)
-				.json({ error: "Unable to login. Please restart the app!" });
+			res.status(500).json({
+				error: "Unable to login. Please restart the app!",
+				status: 500,
+			});
 		}
 	});
 };
 
 //To get loggedin user
 const getExistingUser = async (req, res, next) => {
-	return res.status(200).json({ message: req.user });
+	return res.status(200).json({ message: req.user, status: 200 });
 };
 
 module.exports = { handleAuth, verifyToken, getExistingUser };
