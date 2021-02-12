@@ -11,6 +11,11 @@ const {
 	handleVerification,
 } = require("./Wallet.controllers");
 
+const {
+	redisRoute,
+	githubWebhook,
+} = require('./Action.controllers')
+
 module.exports = {
 	handleAuth,
 	verifyToken,
@@ -19,4 +24,6 @@ module.exports = {
 	handleTranactionsFetch,
 	handleTransactionUpdate,
 	handleVerification,
+	redisRoute,
+	githubWebhook
 };
