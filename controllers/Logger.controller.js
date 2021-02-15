@@ -30,12 +30,14 @@ const config = {
 
 if (NODE_ENV != 'development') logger.add(CloudWatchTransport, config);
 
-logger.level = process.env.LOG_LEVEL || "tp";
+logger.level = process.env.LOG_LEVEL || "silly";
 
 logger.stream = {
   write: (message, encoding) => {
     logger.info(message);
   }
 };
+
+console.log(`env variable region = ${process.env.CLOUDWATCH_REGION}`)
 
 module.exports = logger;

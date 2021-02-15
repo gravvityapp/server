@@ -1,10 +1,12 @@
 const logger = require('./controllers/Logger.controller')
 
-logger.log({
-	level: 'hello',
-	message: 'this is a test message',
-	meta: {
-		a: 'b',
-		b: 'c'
-	}
-})
+// logger.log({
+// 	level: 'info',
+// 	message: 'this is a test message',
+// 	meta: {
+// 		a: 'b',
+// 		b: 'c'
+// 	}
+// })
+
+logger.log('info', "[STARTUP] Connecting to DB...", {tags: 'startup,mongo'})
