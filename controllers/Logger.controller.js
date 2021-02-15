@@ -4,7 +4,7 @@ const winston = require('winston'),
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-const logger = new winston.Logger({
+let logger = winston.createLogger({
   transports: [
     new (winston.transports.Console)({
       timestamp: true,
