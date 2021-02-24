@@ -1,14 +1,18 @@
+//TODO ---- Add SSL Config for production
+//TODO ---- Take all the JSON objects for messages and errors and add in utils folder
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const helmet = require("helmet");
-const mongoose = require("mongoose");
 
 const app = express();
 app.use(cors());
 app.use(helmet());
 app.use(express.json());
+
+// TODO ---- Remove morgan and configure Winston
 app.enable("trust proxy"); //To log IP Address of the requests
 app.use(
 	morgan(
@@ -27,6 +31,7 @@ const handleBuySellActions = require("./routes/Action.routes");
 app.use("/api/action", handleBuySellActions);
 
 //Mongodb Connection
+const mongoose = require("mongoose");
 const MONGO_URI = process.env.MONGO_URI;
 mongoose
 	.connect(MONGO_URI, {

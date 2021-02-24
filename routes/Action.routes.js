@@ -1,6 +1,6 @@
 //These routes are for handling the buy sell actions
 const router = require("express").Router();
-const { verifyToken } = require("../controllers");
+const { verifyToken } = require("../middlewares");
 
 //Get All actions
 router.get("/all", verifyToken);

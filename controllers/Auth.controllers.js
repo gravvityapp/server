@@ -1,5 +1,6 @@
 const Users = require("../models/Users");
 const jwt = require("jsonwebtoken");
+const handleMessage = require("../utils/MessageHandler");
 const { JWT_SECRET } = process.env;
 
 //To Sign JWT Token(used in handleAuth function below)
@@ -16,34 +17,43 @@ const handleFullName = (fullName) => {
 	return { firstName, lastName };
 };
 
+//Used in handleAuth to handle the request according to app or web
+const handleRequestsBasedOnPlatform = (token, user, platformType) => {
+	platformType = platformType.toLowerCase();
+
+	let payloadObject = {
+		user: platformType === "app" ? user : null,
+		redirect: platformType === "web" ? true : null,
+		token: token,
+	};
+
+	return handleMessage("RESOURCE_CREATED", payloadObject);
+};
+
 //To handle User signup and login
 const handleAuth = async (req, res, next) => {
 	const { fullName, googleId, email, platformType } = req.body; //platformType can either be "app" or "web"
 
 	if (!fullName || !googleId || !email || !platformType) {
-		return res.status(400).json({
-			error: "Problem with the request. Please try again!",
-			status: 400,
-		});
+		const errorObj = handleMessage("INVALID_REQUEST_SYNTAX", null);
+		return res.status(errorObj.status).json(errorObj);
 	}
 
-	if (platformType !== "app" || platformType !== "web") {
-		return res.status(400).json({
-			error: "Problem with the request. Please try again!",
-			status: 400,
-		});
+	if (platformType !== "app" && platformType !== "web") {
+		const errorObj = handleMessage("INVALID_REQUEST_SYNTAX", null);
+		return res.status(errorObj.status).json(errorObj);
 	}
 
 	try {
 		const isUserExisting = await Users.findOne({ googleId });
 		if (isUserExisting) {
 			const token = signJWT(googleId);
-			if (platformType === "app")
-				res
-					.status(200)
-					.json({ message: token, user: isUserExisting, status: 200 });
-			else if (platformType === "web")
-				res.status(200).json({ message: token, redirect: true, status: 200 });
+			const messageObj = handleRequestsBasedOnPlatform(
+				token,
+				isUserExisting,
+				platformType
+			);
+			res.status(messageObj.status).json(messageObj);
 		} else {
 			const partsOfFullName = handleFullName(fullName);
 			const saveUser = new Users({
@@ -57,62 +67,27 @@ const handleAuth = async (req, res, next) => {
 			const savedUser = await saveUser.save();
 			try {
 				const token = signJWT(googleId);
-				if (platformType === "app")
-					return res
-						.status(201)
-						.json({ message: token, user: savedUser, status: 201 });
-				else if (platformType === "web")
-					res.status(201).json({ message: token, redirect: true, status: 201 });
+				const messageObj = handleRequestsBasedOnPlatform(
+					token,
+					savedUser,
+					platformType
+				);
+				res.status(messageObj.status).json(messageObj);
 			} catch (err) {
-				return res.status(500).json({
-					error: "Error with the request. Please try again!",
-					status: 500,
-				});
+				const errorObj = handleMessage("INTERNAL_SERVER_ERROR", null);
+				return res.status(errorObj.status).json(errorObj);
 			}
 		}
 	} catch (err) {
-		return res.status(500).json({
-			error: "Error with the request. Please try again!",
-			status: 500,
-		});
+		const errorObj = handleMessage("INTERNAL_SERVER_ERROR", null);
+		return res.status(errorObj.status).json(errorObj);
 	}
-};
-
-//To verify jwt token
-const verifyToken = async (req, res, next) => {
-	const { authorization } = req.headers;
-	if (!authorization)
-		return res
-			.status(401)
-			.json({ error: "You Must be Logged In to Continue", status: 401 });
-	const token = authorization.replace("Bearer ", "");
-	if (!token)
-		return res
-			.status(401)
-			.json({ error: "You Must be Logged In to Continue", status: 401 });
-	jwt.verify(token, JWT_SECRET, async (err, payload) => {
-		if (err)
-			return res
-				.status(401)
-				.json({ error: "You Must be Logged In to Continue", status: 401 });
-
-		const { googleId } = payload;
-		const fetchedUser = await Users.findOne({ googleId });
-		try {
-			req.user = fetchedUser;
-			next();
-		} catch (err) {
-			res.status(500).json({
-				error: "Unable to login. Please restart the app!",
-				status: 500,
-			});
-		}
-	});
 };
 
 //To get loggedin user
 const getExistingUser = async (req, res, next) => {
-	return res.status(200).json({ message: req.user, status: 200 });
+	const messageObj = handleMessage("REQUEST_SUCCESS", req.user);
+	return res.status(messageObj.status).json(messageObj);
 };
 
-module.exports = { handleAuth, verifyToken, getExistingUser };
+module.exports = { handleAuth, getExistingUser };

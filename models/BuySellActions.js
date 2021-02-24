@@ -45,3 +45,31 @@ const buySellActionsSchema = new Schema(
 );
 
 module.exports = mongoose.model("BuySellActions", buySellActionsSchema);
+
+// [
+
+// {
+// 	user1
+// 	sell
+// 	time0
+// }
+
+// 	{
+// 	user1
+// 	buy
+// 	time1
+// },
+
+// {
+// 	user1
+// 	buy
+// 	time2
+// }
+// ]
+
+// redis == all logs
+
+// {
+// 	time1
+// 	stockPrice
+// }

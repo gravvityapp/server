@@ -1,51 +1,13 @@
+const crypto = require("crypto");
+const handleMessage = require("../utils/MessageHandler");
 const WalletTransactions = require("../models/WalletTransactions");
 const Users = require("../models/Users");
 const razorpay = require("razorpay");
-
-//For the razorpay
-const instance = new razorpay({
-	key_id: "rzp_test_n3ySkUcUdOIoIf",
-	key_secret: "MgkDJAFk0i425pNjPZX702UI",
-});
-
-const handleRazorpay = async (req, res, next) => {
-	try {
-		const response = await instance.orders.create({
-			amount: 10000,
-			currency: "INR",
-			receipt: "thisisthetestreceipt",
-			payment_capture: 1,
-		});
-		console.log(response, "response");
-		res.json({
-			id: response.id,
-		});
-	} catch (err) {
-		console.log(err, "error");
-	}
-};
-
-//For Razorpay Verification
-const handleVerification = async (req, res, next) => {
-	const secret = "123456";
-	console.log(req.body, "body");
-
-	const crypto = require("crypto");
-
-	const shasum = crypto.createHmac("sha256", secret);
-	shasum.update(JSON.stringify(req.body));
-	const digest = shasum.digest("hex");
-
-	console.log(digest, req.headers["x-razorpay-signature"]);
-
-	if (digest === req.headers["x-razorpay-signature"]) {
-		console.log("legit");
-		res.json({ status: "ok" });
-	} else {
-		console.log("timepass");
-		res.status(502).json({ status: "fail" });
-	}
-};
+const {
+	RAZORPAY_WEBHOOK_SECRET,
+	RAZORPAY_KEY_ID,
+	RAZORPAY_KEY_SECRET,
+} = process.env;
 
 //To get all the wallet transactions of a user
 const handleTranactionsFetch = async (req, res, next) => {
@@ -59,13 +21,39 @@ const handleTranactionsFetch = async (req, res, next) => {
 			{ otherDetails: 0 }
 		).sort({ time: -1 });
 
-		if (foundTransactions.length > 0)
-			res.status(200).json({ message: foundTransactions });
-		else res.status(404).json({ error: "No Transactions Found!" });
+		if (foundTransactions.length > 0) {
+			const messageObj = handleMessage("REQUEST_SUCCESS", foundTransactions);
+			res.status(messageObj.status).json(messageObj);
+		} else {
+			const errorObj = handleMessage("NOT_FOUND", null);
+			res.status(errorObj.status).json(errorObj);
+		}
 	} catch (err) {
-		return res
-			.status(500)
-			.json({ error: "Error with the request. Please try again!" });
+		const errorObj = handleMessage("INTERNAL_SERVER_ERROR", null);
+		return res.status(errorObj.status).json(errorObj);
+	}
+};
+
+// To generate a razorpay order
+const handleRazorpay = async (req, res, next) => {
+	const instance = new razorpay({
+		key_id: RAZORPAY_KEY_ID,
+		key_secret: RAZORPAY_KEY_SECRET,
+	});
+
+	try {
+		const response = await instance.orders.create({
+			amount: 10000,
+			currency: "INR",
+			receipt: "thisisthetestreceipt",
+			payment_capture: 1,
+		});
+		console.log(response, "response");
+		res.json({
+			id: response.id,
+		});
+	} catch (err) {
+		console.log(err, "error");
 	}
 };
 
@@ -109,20 +97,23 @@ const handleUserWalletUpdate = async (
 
 //To update transaction of a user
 const handleTransactionUpdate = async (req, res, next) => {
-	const userId = req.user._id;
-	const googleId = req.user.googleId;
-	const amount = parseInt(req.body.amount);
-	const actionType = req.body.actionType;
-	const isTransactionSuccessful = req.body.isTransactionSuccessful;
-	const otherDetails = req.body.otherDetails;
+	const userId = req.body.payload.payment.entity.notes.id;
+	const googleId = req.body.payload.payment.entity.notes.googleId;
+	const amount = parseInt(req.body.payload.payment.entity.amount) / 100; //Divided by 100 because razorpay gives amount in smallest currency(paisa)
+	const actionType = req.body.actionType || "add";
+	const isTransactionSuccessful =
+		req.body.payload.payment.entity.status.toLowerCase() === "captured";
+	const otherDetails = req.body;
 
 	const reqPath = req.originalUrl;
 	const reqRoute = reqPath.split("/")[3]; //add or withdraw
 
+	//Check if route matches the action type(this is just for double verification)
 	if (reqRoute !== actionType)
-		return res
-			.status(400)
-			.json({ error: "Error with the Request! Please try Again!" });
+		return res.status(400).json({
+			error: "Error with the Request! Please try Again!",
+			status: 400,
+		});
 
 	//check for negative balance
 	if (
@@ -131,7 +122,18 @@ const handleTransactionUpdate = async (req, res, next) => {
 	) {
 		return res
 			.status(400)
-			.json({ error: "Cannot Withdraw more than balance!" });
+			.json({ error: "Cannot Withdraw more than balance!", status: 400 });
+	}
+
+	//This is to check if the razorpay request is legit and not forged
+	const shasum = crypto.createHmac("sha256", RAZORPAY_WEBHOOK_SECRET);
+	shasum.update(JSON.stringify(req.body));
+	const digest = shasum.digest("hex");
+
+	if (digest !== req.headers["x-razorpay-signature"]) {
+		return res
+			.status(502)
+			.json({ error: "Fake Request Detected!", status: 502 });
 	}
 
 	const saveNewTransaction = new WalletTransactions({
@@ -157,18 +159,20 @@ const handleTransactionUpdate = async (req, res, next) => {
 				.status(updateUserData.status)
 				.json(
 					updateUserData.message
-						? { message: updateUserData.message }
-						: { error: updateUserData.error }
+						? { message: updateUserData.message, status: updateUserData.status }
+						: { error: updateUserData.error, status: updateUserData.status }
 				);
 		} else {
-			return res
-				.status(500)
-				.json({ error: "Error with the request. Please try again!" });
+			return res.status(500).json({
+				error: "Error with the request. Please try again!",
+				status: 500,
+			});
 		}
 	} catch (err) {
-		return res
-			.status(500)
-			.json({ error: "Error with the request. Please try again!" });
+		return res.status(500).json({
+			error: "Error with the request. Please try again!",
+			status: 500,
+		});
 	}
 };
 
@@ -176,5 +180,4 @@ module.exports = {
 	handleTranactionsFetch,
 	handleTransactionUpdate,
 	handleRazorpay,
-	handleVerification,
 };
