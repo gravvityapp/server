@@ -1,6 +1,7 @@
 
 const winston = require('winston'),
     CloudWatchTransport = require('winston-aws-cloudwatch');
+require('dotenv').config()
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
